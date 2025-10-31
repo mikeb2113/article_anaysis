@@ -1,0 +1,1 @@
+docker exec -it stock_app-app-1 sh -c "rm /app/cache.json"

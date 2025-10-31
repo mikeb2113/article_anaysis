@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  app:
+    image: stock_app
+    build: .
+    container_name: stock_app-app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - selenium
+    environment:
+      - SELENIUM_URL=http://selenium:4444/wd/hub
+    shm_size: 6g       # Increase shared memory to 2GB
+    privileged: true  # Run container in privileged mode
+    dns:
+      - 8.8.8.8        # Google's Public DNS
+      - 8.8.4.4        # Google's Secondary DNS
+      - 1.1.1.1        # Cloudflare Primary DNS
+      - 1.0.0.1        # Cloudflare Secondary DNS
+      - 208.67.222.222 # OpenDNS Primary DNS
+      - 208.67.220.220 # OpenDNS Secondary DNS
+      - 9.9.9.9        # Quad9 Primary DNS (Security-focused)
+      - 149.112.112.112 # Quad9 Secondary DNS
+      - 4.2.2.1        # Level 3 DNS
+      - 4.2.2.2        # Level 3 Secondary DNS
+
+  selenium:
+    image: selenium/standalone-chrome
+    container_name: stock_app-selenium
+    ports:
+      - "4444:4444"
+    shm_size: 6g       # Increase shared memory to 2GB
+    environment:
+      - SE_SESSION_REQUEST_TIMEOUT=600
+      - SE_SESSION_RETRY_INTERVAL=600
+    dns:
+      - 8.8.8.8        # Google's Public DNS
+      - 8.8.4.4        # Google's Secondary DNS
+      - 1.1.1.1        # Cloudflare Primary DNS
+      - 1.0.0.1        # Cloudflare Secondary DNS
+      - 208.67.222.222 # OpenDNS Primary DNS
+      - 208.67.220.220 # OpenDNS Secondary DNS
+      - 9.9.9.9        # Quad9 Primary DNS
+      - 149.112.112.112 # Quad9 Secondary DNS
+      - 4.2.2.1        # Level 3 DNS
+      - 4.2.2.2        # Level 3 Secondary DNS

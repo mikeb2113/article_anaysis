@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+pandas
+feedparser
+selenium
+requests
+fake-useragent
+beautifulsoup4
+newspaper3k
+ratelimit
+tenacity
