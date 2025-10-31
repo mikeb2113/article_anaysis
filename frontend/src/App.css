@@ -1,0 +1,267 @@
+.App {
+  background-color: #E3F2FD;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
+
+header{
+  position: absolute;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+  background-color: #E3F2FD; /* Soft blue background */
+
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.relative-container{
+  position: relative;
+  align-items: center;
+  z-index: 5;
+}
+
+#search-header-component{
+  position: relative;
+}
+
+#range-header-component{
+  position: relative;
+  color: black;
+}
+
+#title{
+  position: relative;
+  width: 30%;
+  margin-left: 7%;
+}
+
+.temp-holder-to-toggle-load-screen{
+  z-index: 5;
+}
+
+.hide{
+  display: none;
+}
+
+.header-title {
+  background-color: #E3F2FD; /* Soft blue background */
+  color: #000; /* Optional: Set text color */
+  z-index: 0;
+}
+
+#ticker{
+}
+
+#range{
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+
+#load-screen-animation-container{
+  position: relative;
+  background: rgb(2,0,36);
+  background: linear-gradient(0deg, rgba(2,0,36,1) 0%, rgba(9,9,121,1) 69%, rgba(0,212,255,1) 100%);
+  z-index: 10;
+  height: 100%;
+  width: 100%;
+}
+
+#salmon-square{
+  left: 33%;
+  color: rgb(0, 0, 0);
+  background-color: salmon;
+  animation-name: salmon-anim;
+  animation-duration: 5s; /*change to 5s later*/
+  animation-iteration-count: infinite;
+  position: absolute;
+  height: 300px;
+  width: 300px;
+  text-indent: 240px;
+  line-height: 250px;
+  z-index:2;
+  top: 24.8%;
+}
+
+@keyframes salmon-anim{
+  0%{left: 33%; top: 24.8%;}
+  25%{left: 49.25%; top: 24.8%;}
+  50%{left: 49.25%; top: 55.8%;}
+  75%{left: 33%; top: 55.8%;}
+  100%{left: 33%; top: 24.8%;}
+}
+
+/*
+@keyframes composite{
+  0%{left: 33%; top: 24.8%;}
+  25%{left: 49.25%; top: 24.8%;}
+  50%{left: 49.25%; top: 55.8%;}
+  75%{left: 33%; top: 24.8%;}
+  100%{left: 33%; top: 24.8%;}
+}
+*/
+/*
+top-left: {left: 33%; top: 24.8%;}
+bottom-right: {left: 49.25%; top: 55.8%;}
+*/
+
+@keyframes green-anim{
+  0%{left: 49.25%; top: 55.8%;}
+  25%{left: 33%; top: 55.8%;}
+  50%{left: 33%; top: 24.8%;}
+  75%{left: 49.25%; top: 24.8%;}
+  100%{left: 49.25%; top: 55.8%;}
+}
+#green-square{
+  color: rgb(0, 0, 0);
+  background-color: rgb(140, 168, 129);
+  animation-name: green-anim;
+  animation-duration: 5s;
+  animation-iteration-count: infinite;
+  position: absolute;
+  height: 300px;
+  width: 300px;
+  line-height: 250px;
+  z-index: 3;
+  left: 33%;
+  top: 24.8%;
+}
+
+#background-square{
+  background: rgb(2,0,36);
+  background: linear-gradient(27deg, rgba(2,0,36,1) 0%, rgba(9,9,121,1) 8%, rgba(0,212,255,1) 100%);
+  position: absolute;
+  height: 600px;
+  width: 600px;
+  text-indent: -250px;
+  line-height: 250px;
+  z-index: 1;
+  margin-top: 13%;
+  margin-left: 33%;
+}
+
+@keyframes come-into-focus {
+  0%{filter: blur(10px); opacity: 0;}
+  10%{filter: blur(10px); opacity: 0;}
+  20%{filter: blur(10px); opacity: 0;}
+  30%{filter: blur(10px); opacity: 0;}
+  40%{filter: blur(10px); opacity: 1;}
+  50%{filter: blur(0px); opacity: 1;}
+  60%{filter: blur(0px); opacity: 1;}
+  70%{filter: blur(0px); opacity: 1;}
+  80%{filter: blur(0px); opacity: 1;}
+  90%{filter: blur(0px); opacity: 1;}
+  100%{filter: blur(10px); opacity: 0;}
+}
+
+
+.factoid-text {
+  color: whitesmoke;
+  animation-name: come-into-focus, cycle-factoids;
+  animation-duration: 23s, 18s;
+  animation-iteration-count: 1, 1;
+  animation-delay: 3s, 15s;
+  animation-fill-mode: forwards;
+  
+  position: absolute; /* Required for centering */
+  left: 50%;          /* Start from the center of the screen horizontally */
+  transform: translateX(-50%);  /* Move the container back by 50% of its width to center it */
+  
+  opacity: 0; /* Start hidden */
+  
+  white-space: wrap;  /* Ensures text doesn't wrap, keeping it on one line */
+  text-align: center;   /* Centers the text within the container */
+  
+  width: auto;  /* The width will adjust based on the text length */
+  margin-top: 0%;  /* Adjust based on how far from the top you want it to appear */
+  
+  filter: blur(10px);  /* You can keep this for your animation effect */
+}
+
+#graph{
+  z-index: 6;
+  opacity: 1;
+}
+
+@keyframes cycle-factoids {
+  0% { left: 50%; top: 0%; }
+  100% { left: 50%; top: 13%; }
+}
+
+#white-square-one{
+  color: whitesmoke;
+  background-color: whitesmoke;
+  animation-name: white-anim-one;
+  animation-duration: 5s;
+  animation-iteration-count: infinite;
+  position: relative;
+  z-index: 1;
+  height: 300px;
+  width: 300px;
+  left: 200px;
+  top: -600px;
+}
+
+#white-square-two{
+  color: white;
+  background-color: whitesmoke;
+  animation-name: white-anim-two;
+  animation-duration: 5s;
+  animation-iteration-count: infinite;
+  position: relative;
+  z-index: 1;
+  height: 300px;
+  width: 300px;
+  top: -600px;
+  left: -100px;
+}
+
+@keyframes white-anim-two{
+  0%{left: -100px; top: -600px;}
+  25%{left: -100px; top: -900px;}
+  50%{left: 200px; top: -900px;}
+  75%{left: 200px; top: -600px;}
+  100%{left: -100px; top: -600px;}
+}
+
+@keyframes white-anim-one{
+  0%{left: 200px; top: -600px;}
+  25%{left: 200px; top: -300px;}
+  50%{left: -100px; top: -300px;}
+  75%{left: -100px; top: -600px;}
+  100%{left: 200px; top: -600px;}
+}
+
+
+  
+
+
+.fade-to-black{ /*NOTE: Later add js to add this class data to the background upon load screen initialization.*/
+  background-color: rgb(10, 14, 48);
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
