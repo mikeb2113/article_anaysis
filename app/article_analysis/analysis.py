@@ -1,6 +1,8 @@
 import spacy
 from word import Word
 from gensim import corpora, models, similarities, downloader
+#from sentence_transformers import SentenceTransformer
+#from sentence_transformers.util import cos_sim
 nlp = spacy.load('en_core_web_trf')
 
 # Example usage
@@ -22,11 +24,23 @@ text_3 = Word(20,long_text_3)
 
 doc3 = nlp(text_3.get_text())
 
+print(doc1.ents)
 
 
-#print("\n" + "spacy: " + doc1.similarity(doc2))
-res =doc1.similarity(doc3)
-print (f"\n" + str(res))
+
+
+
+
+#res1=doc1.similarity(doc2)
+#print(f"Doc 1 similarity to doc 2: \n" + str(res1) + "\n")
+#res2 =doc1.similarity(doc3)
+#print(f"Doc 1 similarity to doc 3: \n" + str(res2) + "\n")
+
+
+
+
+
+
 #chunk_2 = chunk_text_field(long_text_2,long_text_1.get)
 
 
