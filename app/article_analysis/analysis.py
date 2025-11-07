@@ -1,6 +1,7 @@
 import spacy
 from word import Word
 from gensim import corpora, models, similarities, downloader
+from gensim.models import Word2Vec
 #from sentence_transformers import SentenceTransformer
 #from sentence_transformers.util import cos_sim
 nlp = spacy.load('en_core_web_trf')
@@ -27,8 +28,8 @@ doc3 = nlp(text_3.get_text())
 print(doc1.ents)
 
 
-
-
+#https://radimrehurek.com/gensim/models/word2vec.html
+#^ngram analysis, training
 
 
 #res1=doc1.similarity(doc2)

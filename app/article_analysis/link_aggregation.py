@@ -9,11 +9,13 @@ import pandas as pd
 import argparse
 import re, unicodedata
 import sys
-
+import duckdb
+from pathlib import Path
 PROJECT_ID = "article-analysis-001"
 OUT_DIR = Path("out_entities")
 OUT_DIR.mkdir(exist_ok=True, parents=True)
-
+DUCKDB_FILE = OUT_DIR / "gkg.duckdb"
+SCHEMA = "gkg_schema"  # avoid name clash with any catalog named "gkg"
 # ---------------- Helpers ----------------
 def normalize_token(s: str) -> str:
     if not isinstance(s, str):
@@ -22,6 +24,38 @@ def normalize_token(s: str) -> str:
     s = re.sub(r"\s+", " ", s)
     s = re.sub(r"[^\w\s\-&]", "", s)
     return s.strip().lower()
+
+def _sql_path(p: Path) -> str:
+    return str(p).replace("'", "''")
+
+def register_parquet_views(db_path: Path = DUCKDB_FILE):
+    con = duckdb.connect(db_path.as_posix())
+
+    # create schema in the main catalog
+    con.execute(f'CREATE SCHEMA IF NOT EXISTS "{SCHEMA}"')
+    
+    paths = {
+        "articles":  OUT_DIR / "articles"  / "gkg_raw.parquet",
+        "persons":   OUT_DIR / "persons"   / "gkg_persons.parquet",
+        "orgs":      OUT_DIR / "orgs"      / "gkg_orgs.parquet",
+        "locations": OUT_DIR / "locations" / "gkg_locations.parquet",
+    }
+
+    for name, p in paths.items():
+        if p.exists():
+            sql = (
+                f'CREATE OR REPLACE VIEW "{SCHEMA}".{name} AS '
+                f"SELECT * FROM read_parquet('{_sql_path(p)}')"
+            )
+            try:
+                con.execute(sql)
+                print(f"✅ View {SCHEMA}.{name} -> {p}")
+            except Exception as e:
+                print(f"❌ Failed to create view {SCHEMA}.{name}: {e}")
+        else:
+            print(f"⏭️  Skipping {SCHEMA}.{name}: file not found -> {p}")
+
+    return con
 
 def parse_ts(raw_int) -> pd.Timestamp | None:
     try:
@@ -158,6 +192,16 @@ def clean_persons_column_inplace(df: pd.DataFrame) -> int:
     after = df["persons"].fillna("").str.count(";").add(df["persons"].ne("").astype(int)).sum()
     return int(before - after)
 
+def save_parquet(df: pd.DataFrame, path: Path):
+    """
+    Write a parquet file with good defaults for DuckDB.
+    - zstd gives small files + fast reads
+    - keep index off
+    - pyarrow handles tz-aware timestamps
+    """
+    path.parent.mkdir(exist_ok=True, parents=True)
+    df.to_parquet(path, engine="pyarrow", compression="zstd", index=False)
+
 # ---------------- Main ----------------
 def main():
     ap = argparse.ArgumentParser(description="GDELT GKG puller (finance-focused), mode-selective CSVs.")
@@ -175,18 +219,21 @@ def main():
                     help="If mode=persons or mode=all, remove persons that overlap org/location names (requires those cols to be selected).")
     args = ap.parse_args()
 
-    if args.mode is None:
-        user_choice = input("Please select a mode:\n1) articles | 2) persons | 3) orgs | 4) locations | 5) all (INTENSIVE! NOT SUGGESTED!)").strip().lower()
+    if args.mode is None and sys.stdin.isatty():
+        user_choice = input(
+            "Please select a mode:\n1) articles | 2) persons | 3) orgs | 4) locations | 5) all (INTENSIVE! NOT SUGGESTED!) "
+        ).strip().lower()
         mapping = {
             "1": "articles", "articles": "articles",
-            "2": "persons", "persons": "persons",
-            "3": "orgs", "orgs": "orgs",
-            "4": "locations", "locations": "locations",
-            "5": "all", "all": "all",
+            "2": "persons",  "persons":  "persons",
+            "3": "orgs",     "orgs":     "orgs",
+            "4": "locations","locations":"locations",
+            "5": "all",      "all":      "all",
         }
-    args.mode = mapping.get(user_choice,"articles")
-    mode_string = args.mode
-    print("resolved to " + mode_string)
+        args.mode = mapping.get(user_choice, "articles")
+    else:
+        args.mode = args.mode or "articles"
+    print("resolved to " + args.mode)
 
     client = bigquery.Client(project=PROJECT_ID)
     query, params = build_query(
@@ -237,9 +284,9 @@ def main():
     # 1) Articles (raw)
     if args.mode in ("articles", "all"):
         cols = [c for c in ["ts", "source", "url", "themes", "persons", "orgs", "locations"] if c in df.columns]
-        (OUT_DIR / "articles").mkdir(exist_ok=True, parents=True)
-        df[cols].to_csv(OUT_DIR / "articles" / "gkg_raw.csv", index=False)
+        save_parquet(df[cols], OUT_DIR / "articles" / "gkg_raw.parquet")
         pretty(df, "Articles", [c for c in ["ts","source","url"] if c in df.columns], limit=20)
+
 
     # 2) Persons
     if args.mode in ("persons", "all") and "persons" in df.columns:
@@ -250,8 +297,7 @@ def main():
         persons = pd.DataFrame(rows, columns=["ts","source","url","person"]) if rows else pd.DataFrame(columns=["ts","source","url","person"])
         if not persons.empty:
             persons.drop_duplicates(["ts","url","person"], inplace=True)
-            (OUT_DIR / "persons").mkdir(exist_ok=True, parents=True)
-            persons.to_csv(OUT_DIR / "persons" / "gkg_persons.csv", index=False)
+            save_parquet(persons, OUT_DIR / "persons" / "gkg_persons.parquet")
             top_persons = vc(persons, "person")
             if not top_persons.empty:
                 pretty(top_persons, "Top persons", ["person","count"])
@@ -267,8 +313,7 @@ def main():
         orgs = pd.DataFrame(rows, columns=["ts","source","url","org"]) if rows else pd.DataFrame(columns=["ts","source","url","org"])
         if not orgs.empty:
             orgs.drop_duplicates(["ts","url","org"], inplace=True)
-            (OUT_DIR / "orgs").mkdir(exist_ok=True, parents=True)
-            orgs.to_csv(OUT_DIR / "orgs" / "gkg_orgs.csv", index=False)
+            save_parquet(orgs, OUT_DIR / "orgs" / "gkg_orgs.parquet")
             top_orgs = vc(orgs, "org")
             if not top_orgs.empty:
                 pretty(top_orgs, "Top organizations", ["org","count"])
@@ -288,15 +333,14 @@ def main():
         ) if loc_rows else pd.DataFrame(columns=["ts","source","url","loc_type","loc_name","country_code","adm1","adm2","lat","lon","feature_id"])
         if not locs.empty:
             locs.drop_duplicates(["ts","url","loc_name","country_code"], inplace=True)
-            (OUT_DIR / "locations").mkdir(exist_ok=True, parents=True)
-            locs.to_csv(OUT_DIR / "locations" / "gkg_locations.csv", index=False)
+            save_parquet(locs, OUT_DIR / "locations" / "gkg_locations.parquet")
             top_locs = vc(locs, "loc_name")
             if not top_locs.empty:
                 pretty(top_locs, "Top locations (by name)", ["loc_name","count"])
             locs_with_xy = locs.dropna(subset=["lat","lon"])
             if not locs_with_xy.empty:
                 pretty(locs_with_xy, "Sample locations with coords",
-                       ["ts","loc_name","country_code","lat","lon","url"], limit=20)
+                    ["ts","loc_name","country_code","lat","lon","url"], limit=20)
         else:
             print("\n=== Locations (no data) ===")
 
@@ -304,6 +348,15 @@ def main():
     targets = ["nvidia","tsmc","amd","intel","semiconductor","gpu","copper","lme"]
     if args.mode in ("persons","all") and "persons" in df.columns:
         pass  # keep your custom hits section if desired, similar to your original
+    con = register_parquet_views()
+    print(con.execute(f'SELECT COUNT(*) AS n FROM "{SCHEMA}".articles').fetchdf())
+    print(con.execute(f'''
+    SELECT ts, source, url
+    FROM "{SCHEMA}".articles
+    ORDER BY ts DESC
+    LIMIT 5
+    ''').fetchdf())
+    con.close()
 
 if __name__ == "__main__":
     main()
