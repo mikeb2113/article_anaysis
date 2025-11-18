@@ -2,9 +2,9 @@
 import pandas as pd
 from collections import Counter, defaultdict
 
-IDMAP_PATH    = "theme_id_map.parquet"
-ARTICLES_PATH = "out_entities/articles/gkg_raw.parquet"
-OUT_SUMMARY   = "CSR_logging/missing_theme_codes_summary.csv"
+IDMAP_PATH    = "GDELT/theme_id_map.parquet"
+ARTICLES_PATH = "GDELT/out_entities/articles/gkg_raw.parquet"
+OUT_SUMMARY   = "GDELT/CSR_logging/missing_theme_codes_summary.csv"
 
 def _parse_theme_codes(cell: str) -> list[str]:
     """Parse 'CODE,number;CODE,number;...' -> ['CODE','CODE', ...]"""

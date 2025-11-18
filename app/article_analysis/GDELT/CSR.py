@@ -1,7 +1,7 @@
 import pandas as pd
 
 def main():
-    df = pd.read_parquet("theme_list.parquet")
+    df = pd.read_parquet("GDELT/theme_list.parquet")
 
     # normalize column names
     df.columns = [c.lower() for c in df.columns]
@@ -12,7 +12,7 @@ def main():
     # assign stable int IDs
     df["theme_id"] = range(len(df))
 
-    df.to_parquet("theme_id_map.parquet", index=False)
+    df.to_parquet("GDELT/theme_id_map.parquet", index=False)
 
     print(df.head())
     print("total themes:", len(df))

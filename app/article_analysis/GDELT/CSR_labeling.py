@@ -4,10 +4,10 @@ import numpy as np
 from scipy.sparse import csr_matrix, save_npz
 from pathlib import Path
 
-IDMAP_PATH   = Path("theme_id_map.parquet")     # from your cleaned theme table
-ARTICLES_PATH= Path("out_entities/articles/gkg_raw.parquet")         # <- change to your file(s)
-LABELS_OUT   = Path("labels.npz")
-DOC_INDEX_OUT= Path("doc_index.parquet")        # to remember which doc is which row
+IDMAP_PATH   = Path("GDELT/theme_id_map.parquet")     # from your cleaned theme table
+ARTICLES_PATH= Path("GDELT/out_entities/articles/gkg_raw.parquet")         # <- change to your file(s)
+LABELS_OUT   = Path("GDELT/labels.npz")
+DOC_INDEX_OUT= Path("GDELT/doc_index.parquet")        # to remember which doc is which row
 
 def _parse_theme_codes(cell: str) -> list[str]:
     """Parse 'CODE,number;CODE,number;...' -> ['CODE','CODE', ...]"""

@@ -28,17 +28,17 @@ def main():
     target_file = int(input("Please choose a parquet to view:\n1| articles\n2| locations\n3| orgs\n4| persons\n5| theme_id_map\n6| theme_list\n"))
     path=""
     if(target_file==1):
-        path="out_entities/articles/gkg_raw.parquet"
+        path="GDELT/out_entities/articles/gkg_raw.parquet"
     elif(target_file==2):
-        path="out_entities/locations/gkg_locations.parquet"
+        path="GDELT/out_entities/locations/gkg_locations.parquet"
     elif(target_file==3):
-        path="out_entities/orgs/gkg_orgs.parquet"
+        path="GDELT/out_entities/orgs/gkg_orgs.parquet"
     elif(target_file==4):
-        path="out_entities/persons/gkg_persons.parquet"
+        path="GDELT/out_entities/persons/gkg_persons.parquet"
     elif(target_file==5):
-        path="theme_id_map.parquet"
+        path="GDELT/theme_id_map.parquet"
     elif(target_file==6):
-        path="theme_list.parquet"
+        path="GDELT/theme_list.parquet"
     else:
         print("Error: invalid path\npath: " + path)
         return

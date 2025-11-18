@@ -1,10 +1,10 @@
-import link_aggregation
-import trie
-import CSR_labeling
-import CSR_participation_check
-import CSR
-import parquet_view
-import themes_to_parquet
+from GDELT import link_aggregation
+from GDELT import trie
+from GDELT import CSR_labeling
+from GDELT import CSR_participation_check
+from GDELT import CSR
+from GDELT import parquet_view
+from GDELT import themes_to_parquet
 
 def main():
     selection=int(input("Please Select Your Function:\n1| Get Links\n2| Create Trie\n3| Generate Theme Labels\n4| Theme Participation Check\n5| Generate Theme ID Map\n6| View Parquet Data\n7| Generate Theme Parquet\n"))

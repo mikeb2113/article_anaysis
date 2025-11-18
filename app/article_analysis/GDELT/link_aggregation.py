@@ -12,7 +12,7 @@ import sys
 import duckdb
 from pathlib import Path
 PROJECT_ID = "article-analysis-001"
-OUT_DIR = Path("out_entities")
+OUT_DIR = Path("GDELT/out_entities")
 OUT_DIR.mkdir(exist_ok=True, parents=True)
 DUCKDB_FILE = OUT_DIR / "gkg.duckdb"
 SCHEMA = "gkg_schema"  # avoid name clash with any catalog named "gkg"
