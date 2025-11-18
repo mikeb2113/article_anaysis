@@ -9,7 +9,7 @@ ARTICLES_PATH= Path("out_entities/articles/gkg_raw.parquet")         # <- change
 LABELS_OUT   = Path("labels.npz")
 DOC_INDEX_OUT= Path("doc_index.parquet")        # to remember which doc is which row
 
-def parse_theme_codes(cell: str) -> list[str]:
+def _parse_theme_codes(cell: str) -> list[str]:
     """Parse 'CODE,number;CODE,number;...' -> ['CODE','CODE', ...]"""
     if not isinstance(cell, str) or not cell.strip():
         return []
@@ -39,7 +39,7 @@ def main():
     arts["doc_row"] = np.arange(len(arts), dtype=np.int64)
 
     # 3) parse + map to ids
-    arts["theme_codes"] = arts["themes"].apply(parse_theme_codes)
+    arts["theme_codes"] = arts["themes"].apply(_parse_theme_codes)
     def to_ids(codes):
         return sorted({ theme_to_id[c] for c in codes if c in theme_to_id })
     arts["theme_ids"] = arts["theme_codes"].apply(to_ids)
@@ -72,6 +72,3 @@ def main():
     print(f"   Saved doc index to {DOC_INDEX_OUT} (rows kept: {N} of {len(arts)})")
     print("   Sample decoded labels for row 0 (if any):",
           [labels[i] for i in (Y[0].indices if N else [])][:10])
-
-if __name__ == "__main__":
-    main()

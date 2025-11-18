@@ -1,17 +1,18 @@
 import pandas as pd
 
-df = pd.read_parquet("theme_list.parquet")
+def main():
+    df = pd.read_parquet("theme_list.parquet")
 
-# normalize column names
-df.columns = [c.lower() for c in df.columns]
+    # normalize column names
+    df.columns = [c.lower() for c in df.columns]
 
-# keep only the theme column
-df = df[["theme"]].drop_duplicates().reset_index(drop=True)
+    # keep only the theme column
+    df = df[["theme"]].drop_duplicates().reset_index(drop=True)
 
-# assign stable int IDs
-df["theme_id"] = range(len(df))
+    # assign stable int IDs
+    df["theme_id"] = range(len(df))
 
-df.to_parquet("theme_id_map.parquet", index=False)
+    df.to_parquet("theme_id_map.parquet", index=False)
 
-print(df.head())
-print("total themes:", len(df))
+    print(df.head())
+    print("total themes:", len(df))

@@ -1,5 +1,5 @@
 import spacy
-from word import Word
+from chopping_block.word import Word
 from gensim import corpora, models, similarities, downloader
 from gensim.models import Word2Vec
 #from sentence_transformers import SentenceTransformer

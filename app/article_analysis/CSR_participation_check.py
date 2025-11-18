@@ -6,7 +6,7 @@ IDMAP_PATH    = "theme_id_map.parquet"
 ARTICLES_PATH = "out_entities/articles/gkg_raw.parquet"
 OUT_SUMMARY   = "CSR_logging/missing_theme_codes_summary.csv"
 
-def parse_theme_codes(cell: str) -> list[str]:
+def _parse_theme_codes(cell: str) -> list[str]:
     """Parse 'CODE,number;CODE,number;...' -> ['CODE','CODE', ...]"""
     if not isinstance(cell, str) or not cell.strip():
         return []
@@ -30,7 +30,7 @@ def main():
     url_col = "url" if "url" in arts.columns else None
 
     arts = arts.reset_index(drop=True)
-    arts["codes"] = arts["themes"].apply(parse_theme_codes)
+    arts["codes"] = arts["themes"].apply(_parse_theme_codes)
 
     # coverage
     total_codes = arts["codes"].map(len).sum()
@@ -86,6 +86,3 @@ def main():
         df_out.to_csv(OUT_SUMMARY, index=False)
     else:
         print("No missing codes 🎉")
-
-if __name__ == "__main__":
-    main()

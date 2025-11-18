@@ -17,7 +17,7 @@ OUT_DIR.mkdir(exist_ok=True, parents=True)
 DUCKDB_FILE = OUT_DIR / "gkg.duckdb"
 SCHEMA = "gkg_schema"  # avoid name clash with any catalog named "gkg"
 # ---------------- Helpers ----------------
-def normalize_token(s: str) -> str:
+def _normalize_token(s: str) -> str:
     if not isinstance(s, str):
         return ""
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
@@ -28,7 +28,7 @@ def normalize_token(s: str) -> str:
 def _sql_path(p: Path) -> str:
     return str(p).replace("'", "''")
 
-def register_parquet_views(db_path: Path = DUCKDB_FILE):
+def _register_parquet_views(db_path: Path = DUCKDB_FILE):
     con = duckdb.connect(db_path.as_posix())
 
     # create schema in the main catalog
@@ -57,19 +57,19 @@ def register_parquet_views(db_path: Path = DUCKDB_FILE):
 
     return con
 
-def parse_ts(raw_int) -> pd.Timestamp | None:
+def _parse_ts(raw_int) -> pd.Timestamp | None:
     try:
         s = str(int(raw_int))
         return pd.to_datetime(s, format="%Y%m%d%H%M%S", utc=True)
     except Exception:
         return None
 
-def split_semicolon(cell: str) -> list[str]:
+def _split_semicolon(cell: str) -> list[str]:
     if not isinstance(cell, str) or not cell.strip():
         return []
     return [x.strip() for x in cell.split(";") if x.strip()]
 
-def parse_locations(cell: str) -> list[dict]:
+def _parse_locations(cell: str) -> list[dict]:
     if not isinstance(cell, str) or not cell.strip():
         return []
     out = []
@@ -95,7 +95,7 @@ def parse_locations(cell: str) -> list[dict]:
         })
     return out
 
-def pretty(df: pd.DataFrame, title: str, cols: list[str], limit: int = 25) -> None:
+def _pretty(df: pd.DataFrame, title: str, cols: list[str], limit: int = 25) -> None:
     if df.empty:
         print(f"\n=== {title} (no rows) ===")
         return
@@ -104,7 +104,7 @@ def pretty(df: pd.DataFrame, title: str, cols: list[str], limit: int = 25) -> No
     print(tabulate(view[cols].head(limit), headers="keys", tablefmt="psql",
                    showindex=False, stralign="left", disable_numparse=True))
 
-def vc(df: pd.DataFrame, col: str) -> pd.DataFrame:
+def _vc(df: pd.DataFrame, col: str) -> pd.DataFrame:
     if df.empty or col not in df.columns:
         return pd.DataFrame(columns=[col, "count"])
     return (
@@ -113,7 +113,7 @@ def vc(df: pd.DataFrame, col: str) -> pd.DataFrame:
         .rename(columns={"index": col})
     )
 
-def partition_pred_for(hours_back: int) -> str:
+def _partition_pred_for(hours_back: int) -> str:
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(hours=hours_back)
     if cutoff.date() == now.date():
@@ -121,7 +121,7 @@ def partition_pred_for(hours_back: int) -> str:
     else:
         return "_PARTITIONDATE BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY) AND CURRENT_DATE()"
 
-def build_query(mode: str, hours_back: int, finance_regex: str, include_locations_for_clean: bool) -> tuple[str, list]:
+def _build_query(mode: str, hours_back: int, finance_regex: str, include_locations_for_clean: bool) -> tuple[str, list]:
     # decide columns to select based on mode (minimize bytes scanned)
     base_cols = [
         "DATE AS raw_date",
@@ -143,7 +143,7 @@ def build_query(mode: str, hours_back: int, finance_regex: str, include_location
             base_cols.append("V2Locations AS locations")
 
     select_clause = ",\n  ".join(base_cols)
-    part_pred = partition_pred_for(hours_back)
+    part_pred = _partition_pred_for(hours_back)
 
     query = f"""
     SELECT
@@ -163,7 +163,7 @@ def build_query(mode: str, hours_back: int, finance_regex: str, include_location
     ]
     return query, params
 
-def clean_persons_column_inplace(df: pd.DataFrame) -> int:
+def _clean_persons_column_inplace(df: pd.DataFrame) -> int:
     """Remove person tokens that also appear as org or location names (if those cols exist)."""
     if "persons" not in df.columns:
         return 0
@@ -173,16 +173,16 @@ def clean_persons_column_inplace(df: pd.DataFrame) -> int:
     def clean_row(row) -> str:
         ban = set()
         if have_orgs:
-            ban |= {normalize_token(x) for x in split_semicolon(row.get("orgs", ""))}
+            ban |= {_normalize_token(x) for x in _split_semicolon(row.get("orgs", ""))}
         if have_locs:
             ban |= {
-                normalize_token(loc.get("loc_name") or "")
-                for loc in parse_locations(row.get("locations", ""))
+                _normalize_token(loc.get("loc_name") or "")
+                for loc in _parse_locations(row.get("locations", ""))
                 if loc.get("loc_name")
             }
         kept = []
-        for p in split_semicolon(row.get("persons", "")):
-            if normalize_token(p) in ban:
+        for p in _split_semicolon(row.get("persons", "")):
+            if _normalize_token(p) in ban:
                 continue
             kept.append(p)
         return ";".join(kept)
@@ -192,7 +192,7 @@ def clean_persons_column_inplace(df: pd.DataFrame) -> int:
     after = df["persons"].fillna("").str.count(";").add(df["persons"].ne("").astype(int)).sum()
     return int(before - after)
 
-def save_parquet(df: pd.DataFrame, path: Path):
+def _save_parquet(df: pd.DataFrame, path: Path):
     """
     Write a parquet file with good defaults for DuckDB.
     - zstd gives small files + fast reads
@@ -236,7 +236,7 @@ def main():
     print("resolved to " + args.mode)
 
     client = bigquery.Client(project=PROJECT_ID)
-    query, params = build_query(
+    query, params = _build_query(
         mode=args.mode,
         hours_back=args.hours,
         finance_regex=args.finance_regex,
@@ -271,12 +271,12 @@ def main():
 
     # Timestamp for downstream
     if "raw_date" in df.columns:
-        df["ts"] = df["raw_date"].apply(parse_ts)
+        df["ts"] = df["raw_date"].apply(_parse_ts)
 
     # Clean persons overlaps if requested and possible
     removed = 0
     if args.clean_persons_overlaps and ("persons" in df.columns):
-        removed = clean_persons_column_inplace(df)
+        removed = _clean_persons_column_inplace(df)
         if removed:
             print(f"Removed {removed} person tokens that matched org/location names.")
 
@@ -284,23 +284,23 @@ def main():
     # 1) Articles (raw)
     if args.mode in ("articles", "all"):
         cols = [c for c in ["ts", "source", "url", "themes", "persons", "orgs", "locations"] if c in df.columns]
-        save_parquet(df[cols], OUT_DIR / "articles" / "gkg_raw.parquet")
-        pretty(df, "Articles", [c for c in ["ts","source","url"] if c in df.columns], limit=20)
+        _save_parquet(df[cols], OUT_DIR / "articles" / "gkg_raw.parquet")
+        _pretty(df, "Articles", [c for c in ["ts","source","url"] if c in df.columns], limit=20)
 
 
     # 2) Persons
     if args.mode in ("persons", "all") and "persons" in df.columns:
         rows = []
         for _, r in df.iterrows():
-            for p in split_semicolon(r.get("persons","")):
+            for p in _split_semicolon(r.get("persons","")):
                 rows.append({"ts": r.get("ts"), "source": r.get("source"), "url": r.get("url"), "person": p})
         persons = pd.DataFrame(rows, columns=["ts","source","url","person"]) if rows else pd.DataFrame(columns=["ts","source","url","person"])
         if not persons.empty:
             persons.drop_duplicates(["ts","url","person"], inplace=True)
-            save_parquet(persons, OUT_DIR / "persons" / "gkg_persons.parquet")
-            top_persons = vc(persons, "person")
+            _save_parquet(persons, OUT_DIR / "persons" / "gkg_persons.parquet")
+            top_persons = _vc(persons, "person")
             if not top_persons.empty:
-                pretty(top_persons, "Top persons", ["person","count"])
+                _pretty(top_persons, "Top persons", ["person","count"])
         else:
             print("\n=== Persons (no data) ===")
 
@@ -308,15 +308,15 @@ def main():
     if args.mode in ("orgs", "all") and "orgs" in df.columns:
         rows = []
         for _, r in df.iterrows():
-            for o in split_semicolon(r.get("orgs","")):
+            for o in _split_semicolon(r.get("orgs","")):
                 rows.append({"ts": r.get("ts"), "source": r.get("source"), "url": r.get("url"), "org": o})
         orgs = pd.DataFrame(rows, columns=["ts","source","url","org"]) if rows else pd.DataFrame(columns=["ts","source","url","org"])
         if not orgs.empty:
             orgs.drop_duplicates(["ts","url","org"], inplace=True)
-            save_parquet(orgs, OUT_DIR / "orgs" / "gkg_orgs.parquet")
-            top_orgs = vc(orgs, "org")
+            _save_parquet(orgs, OUT_DIR / "orgs" / "gkg_orgs.parquet")
+            top_orgs = _vc(orgs, "org")
             if not top_orgs.empty:
-                pretty(top_orgs, "Top organizations", ["org","count"])
+                _pretty(top_orgs, "Top organizations", ["org","count"])
         else:
             print("\n=== Organizations (no data) ===")
 
@@ -324,7 +324,7 @@ def main():
     if args.mode in ("locations", "all") and "locations" in df.columns:
         loc_rows = []
         for _, r in df.iterrows():
-            for loc in parse_locations(r.get("locations","")):
+            for loc in _parse_locations(r.get("locations","")):
                 loc["ts"] = r.get("ts"); loc["source"] = r.get("source"); loc["url"] = r.get("url")
                 loc_rows.append(loc)
         locs = pd.DataFrame(
@@ -333,13 +333,13 @@ def main():
         ) if loc_rows else pd.DataFrame(columns=["ts","source","url","loc_type","loc_name","country_code","adm1","adm2","lat","lon","feature_id"])
         if not locs.empty:
             locs.drop_duplicates(["ts","url","loc_name","country_code"], inplace=True)
-            save_parquet(locs, OUT_DIR / "locations" / "gkg_locations.parquet")
-            top_locs = vc(locs, "loc_name")
+            _save_parquet(locs, OUT_DIR / "locations" / "gkg_locations.parquet")
+            top_locs = _vc(locs, "loc_name")
             if not top_locs.empty:
-                pretty(top_locs, "Top locations (by name)", ["loc_name","count"])
+                _pretty(top_locs, "Top locations (by name)", ["loc_name","count"])
             locs_with_xy = locs.dropna(subset=["lat","lon"])
             if not locs_with_xy.empty:
-                pretty(locs_with_xy, "Sample locations with coords",
+                _pretty(locs_with_xy, "Sample locations with coords",
                     ["ts","loc_name","country_code","lat","lon","url"], limit=20)
         else:
             print("\n=== Locations (no data) ===")
@@ -348,7 +348,7 @@ def main():
     targets = ["nvidia","tsmc","amd","intel","semiconductor","gpu","copper","lme"]
     if args.mode in ("persons","all") and "persons" in df.columns:
         pass  # keep your custom hits section if desired, similar to your original
-    con = register_parquet_views()
+    con = _register_parquet_views()
     print(con.execute(f'SELECT COUNT(*) AS n FROM "{SCHEMA}".articles').fetchdf())
     print(con.execute(f'''
     SELECT ts, source, url
@@ -357,6 +357,3 @@ def main():
     LIMIT 5
     ''').fetchdf())
     con.close()
-
-if __name__ == "__main__":
-    main()
